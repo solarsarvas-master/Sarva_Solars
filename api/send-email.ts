@@ -97,6 +97,20 @@ export default async function handler(req: any, res: any) {
   }
 
   if (!row) {
+    let projectHost = "invalid-url";
+
+    try {
+      projectHost = new URL(supabaseUrl).host;
+    } catch {
+      // Do not log credentials or environment variable values.
+    }
+
+    console.warn("Supabase submission not found:", {
+      projectHost,
+      table: tables[type],
+      recordId,
+    });
+
     return res.status(404).json({ error: "Submission not found" });
   }
 
