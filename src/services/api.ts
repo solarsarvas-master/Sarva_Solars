@@ -1130,7 +1130,7 @@ export async function submitQuote(data: any): Promise<{ message: string; quote: 
     estimated_cost: Number(data.estimatedCost || data.estimatedCostMin) || 120000,
     estimated_subsidy: Number(data.estimatedSubsidy) || 78000,
     net_cost: Number(data.netCost) || 42000,
-    status: 'Pending',
+    status: 'Pending' as const,
     message: data.message || ''
   };
 
