@@ -83,7 +83,20 @@ export default async function handler(req: any, res: any) {
     .eq("id", recordId)
     .maybeSingle();
 
-  if (lookupError || !row) {
+  if (lookupError) {
+    console.error("Supabase submission lookup failed:", {
+      table: tables[type],
+      code: lookupError.code,
+      message: lookupError.message,
+      details: lookupError.details,
+      hint: lookupError.hint,
+    });
+    return res.status(500).json({
+      error: "Could not look up submission",
+    });
+  }
+
+  if (!row) {
     return res.status(404).json({ error: "Submission not found" });
   }
 
