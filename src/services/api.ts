@@ -1116,50 +1116,51 @@ export async function deleteLead(id: string): Promise<void> {
 export async function submitQuote(data: any): Promise<{ message: string; quote: QuoteRequest }> {
   const id = `quote-${Date.now()}`;
 
-  const { data: quoteData, error } = await supabase
+  const payload = {
+    id,
+    name: data.name || 'Valued Customer',
+    phone: data.phone || '',
+    email: data.email || '',
+    city: data.city || 'Guntur',
+    state: data.state || 'Andhra Pradesh',
+    property_type: data.propertyType || 'Residential',
+    monthly_bill: Number(data.monthlyBill || data.averageMonthlyBill) || 0,
+    roof_type: data.roofType || 'RCC Flat Roof',
+    proposed_kw: Number(data.proposedKw || data.recommendedKw) || 3,
+    estimated_cost: Number(data.estimatedCost || data.estimatedCostMin) || 120000,
+    estimated_subsidy: Number(data.estimatedSubsidy) || 78000,
+    net_cost: Number(data.netCost) || 42000,
+    status: 'Pending',
+    message: data.message || ''
+  };
+
+  const { error } = await supabase
     .from('quotes')
-    .insert({
-      id,
-      name: data.name || 'Valued Customer',
-      phone: data.phone || '',
-      email: data.email || '',
-      city: data.city || 'Guntur',
-      state: data.state || 'Andhra Pradesh',
-      property_type: data.propertyType || 'Residential',
-      monthly_bill: Number(data.monthlyBill || data.averageMonthlyBill) || 0,
-      roof_type: data.roofType || 'RCC Flat Roof',
-      proposed_kw: Number(data.proposedKw || data.recommendedKw) || 3,
-      estimated_cost: Number(data.estimatedCost || data.estimatedCostMin) || 120000,
-      estimated_subsidy: Number(data.estimatedSubsidy) || 78000,
-      net_cost: Number(data.netCost) || 42000,
-      status: 'Pending',
-      message: data.message || ''
-    })
-    .select('*')
-    .single();
+    .insert(payload);
 
   if (error) throw error;
 
   const quote: QuoteRequest = {
-    id: quoteData.id,
-    name: quoteData.name,
-    phone: quoteData.phone,
-    email: quoteData.email,
-    city: quoteData.city,
-    state: quoteData.state,
-    propertyType: quoteData.property_type,
-    monthlyBill: Number(quoteData.monthly_bill),
-    roofType: quoteData.roof_type,
-    proposedKw: Number(quoteData.proposed_kw),
-    estimatedCost: Number(quoteData.estimated_cost),
-    estimatedSubsidy: Number(quoteData.estimated_subsidy),
-    netCost: Number(quoteData.net_cost),
-    status: quoteData.status,
-    message: quoteData.message,
-    createdAt: quoteData.created_at
+    id,
+    name: payload.name,
+    phone: payload.phone,
+    email: payload.email,
+    city: payload.city,
+    state: payload.state,
+    propertyType: payload.property_type,
+    monthlyBill: payload.monthly_bill,
+    roofType: payload.roof_type,
+    proposedKw: payload.proposed_kw,
+    estimatedCost: payload.estimated_cost,
+    estimatedSubsidy: payload.estimated_subsidy,
+    netCost: payload.net_cost,
+    status: payload.status,
+    message: payload.message,
+    createdAt: new Date().toISOString()
   };
 
-  await dispatchEmail('Quote', quoteData.id);
+  await dispatchEmail('Quote', id);
+
   return { message: 'Quote submitted successfully', quote };
 }
 
