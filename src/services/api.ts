@@ -18,7 +18,6 @@ import {
   HeroSlide,
   AuditLog,
   VisitorLog,
-  EmailNotification
 } from '../types';
 
 import { getCurrentSupabaseUser, signInWithPassword, signOut } from './supabaseAuth';
@@ -960,25 +959,6 @@ export async function deleteGalleryItem(id: string): Promise<void> {
 }
 
 
-async function dispatchEmail(
-  formType: "Lead" | "Quote" | "JobApplication",
-  recordId: string
-): Promise<void> {
-  try {
-    const response = await fetch("/api/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ formType, recordId }),
-    });
-
-    if (!response.ok) {
-      console.error("Email dispatch request failed:", response.status);
-    }
-  } catch (error) {
-    console.error("Email dispatch could not be reached:", error);
-  }
-}
-
 // LEADS
 export async function submitLead(data: any): Promise<{ message: string; lead: Lead }> {
   const id = `lead-${Date.now()}`;
@@ -1025,7 +1005,6 @@ export async function submitLead(data: any): Promise<{ message: string; lead: Le
     updatedAt: now
   };
 
-  await dispatchEmail('Lead', leadData.id);
   return { message: 'Lead submitted successfully', lead };
 }
 
@@ -1158,8 +1137,6 @@ export async function submitQuote(data: any): Promise<{ message: string; quote: 
     message: payload.message,
     createdAt: new Date().toISOString()
   };
-
-  await dispatchEmail('Quote', id);
 
   return { message: 'Quote submitted successfully', quote };
 }
@@ -1387,7 +1364,6 @@ export async function submitJobApplication(data: Omit<JobApplication, 'id' | 'cr
     createdAt: applicationData.created_at
   };
 
-  await dispatchEmail('JobApplication', applicationData.id);
   return { message: 'Application submitted successfully', application };
 }
 
@@ -1695,30 +1671,6 @@ export async function fetchAnalyticsSummary(): Promise<any> {
     ).length,
     pendingQuotes: quotes.filter((quote) => quote.status === 'Pending').length
   };
-}
-
-export async function fetchEmailNotifications(): Promise<EmailNotification[]> {
-  const { data, error } = await supabase
-    .from('email_notifications')
-    .select('*')
-    .order('sent_at', { ascending: false });
-
-  if (error) throw error;
-
-  return (data ?? []).map((notification) => ({
-    id: notification.id,
-    to: notification.to_email,
-    subject: notification.subject,
-    formType: notification.form_type,
-    customerName: notification.customer_name,
-    customerEmail: notification.customer_email,
-    customerPhone: notification.customer_phone,
-    details: notification.details ?? {},
-    sentAt: notification.sent_at,
-    status: notification.status,
-    deliveryMethod: notification.delivery_method,
-    errorMessage: notification.error_message
-  }));
 }
 
 export async function changeUserPassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {

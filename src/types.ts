@@ -231,18 +231,4 @@ export interface VisitorLog {
   timestamp: string;
 }
 
-export interface EmailNotification {
-  id: string;
-  to: string;
-  subject: string;
-  formType: 'Lead' | 'Quote' | 'JobApplication';
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  details: string;
-  sentAt: string;
-  status: 'Sent' | 'Delivered' | 'Pending' | 'Failed';
-  deliveryMethod?: string;
-  errorMessage?: string;
-}
 

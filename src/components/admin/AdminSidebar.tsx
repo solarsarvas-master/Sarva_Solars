@@ -15,7 +15,6 @@ import {
   FileText,
   Users,
   Eye,
-  Mail,
   UserCheck,
   Activity,
   Folder,
@@ -41,7 +40,6 @@ export type TabType =
   | 'leads'
   | 'quotes'
   | 'visitorLogs'
-  | 'emailNotifications'
   | 'staff'
   | 'audit'
   | 'media';
@@ -85,7 +83,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { id: 'leads', label: 'Customer Inquiry Leads', icon: FileText, count: leadsCount },
     { id: 'quotes', label: 'Instant Quote Requests', icon: Users, count: quotesCount },
     { id: 'visitorLogs', label: 'Live Visitor Traffic Logs', icon: Eye },
-    { id: 'emailNotifications', label: 'Admin Email Alerts', icon: Mail },
     { id: 'staff', label: 'Staff Accounts & Roles', icon: UserCheck },
     ...(user.role === 'Admin' ? [{ id: 'audit', label: 'System Audit Logs', icon: Activity }] : []),
     { id: 'media', label: 'Media & File Library', icon: Folder }

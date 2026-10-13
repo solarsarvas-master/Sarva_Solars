@@ -17,7 +17,6 @@ import {
   AppSettings,
   AuditLog,
   VisitorLog,
-  EmailNotification,
   HeroSlide,
   UserRole
 } from '../types';
@@ -72,7 +71,6 @@ import {
   fetchAnalyticsSummary,
   fetchAuditLogs,
   fetchVisitorLogs,
-  fetchEmailNotifications,
   changeUserPassword,
   updateUserProfile,
   fetchUsers,
@@ -120,7 +118,6 @@ import {
   Activity,
   Save,
   X,
-  Mail,
   Eye,
   Upload,
   Copy,
@@ -167,7 +164,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLoginSuccess, onLo
     | 'leads'
     | 'quotes'
     | 'visitorLogs'
-    | 'emailNotifications'
     | 'staff'
     | 'audit'
     | 'media';
@@ -190,7 +186,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLoginSuccess, onLo
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [careersSubTab, setCareersSubTab] = useState<'openings' | 'applications'>('openings');
   const [visitorLogs, setVisitorLogs] = useState<VisitorLog[]>([]);
-  const [emailNotifications, setEmailNotifications] = useState<EmailNotification[]>([]);
   const [settings, setSettingsState] = useState<AppSettings | null>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
@@ -264,7 +259,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLoginSuccess, onLo
   const loadData = async () => {
     if (!user) return;
     try {
-      const [l, q, prod, proj, b, svc, sub, test, faq, gal, j, apps, set, ana, vLogs, eMails, uList, hs, media] = await Promise.all([
+      const [l, q, prod, proj, b, svc, sub, test, faq, gal, j, apps, set, ana, vLogs, uList, hs, media] = await Promise.all([
         fetchLeads().catch(() => []),
         fetchQuotes().catch(() => []),
         fetchProducts().catch(() => []),
@@ -280,7 +275,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLoginSuccess, onLo
         fetchSettings().catch(() => null),
         fetchAnalyticsSummary().catch(() => null),
         fetchVisitorLogs().catch(() => []),
-        fetchEmailNotifications().catch(() => []),
         fetchUsers().catch(() => []),
         fetchHeroSlides().catch(() => []),
         fetchMediaList().catch(() => [])
@@ -300,7 +294,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLoginSuccess, onLo
       if (set) setSettingsState(set);
       if (ana) setAnalytics(ana);
       setVisitorLogs(vLogs);
-      setEmailNotifications(eMails);
       setStaffUsers(uList);
       setHeroSlides(hs);
       setMediaFiles(media);
@@ -760,15 +753,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLoginSuccess, onLo
           Customer Visits ({visitorLogs.length})
         </button>
 
-        <button
-          onClick={() => setActiveTab('emailNotifications')}
-          className={`py-2 px-3.5 rounded-xl font-bold transition-all flex items-center gap-1.5 ${
-            activeTab === 'emailNotifications' ? 'bg-amber-600 text-white shadow' : 'text-slate-700 hover:bg-slate-200'
-          }`}
-        >
-          <Mail className="w-3.5 h-3.5 text-amber-300" />
-          Email Alerts ({emailNotifications.length})
-        </button>
+        
 
         <button
           onClick={() => setActiveTab('staff')}
@@ -2059,95 +2044,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLoginSuccess, onLo
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB: EMAIL NOTIFICATIONS DISPATCH LOG */}
-      {activeTab === 'emailNotifications' && (
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xl space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900 font-poppins flex items-center gap-2">
-                <Mail className="w-6 h-6 text-amber-500" />
-                Admin Mail Dispatch Alerts ({emailNotifications.length})
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Automated email alerts sent to <strong className="text-amber-500 font-bold">sarvasolars@gmail.com</strong> whenever a customer submits a lead, quote, or job form.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="bg-amber-100 text-amber-900 text-xs font-black px-4 py-2 rounded-2xl border border-amber-300">
-                Destination: sarvasolars@gmail.com
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {emailNotifications.length === 0 ? (
-              <div className="p-12 text-center text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                No email notifications dispatched yet. Click <strong>Send Test Email</strong> above or fill a customer form to trigger alerts.
-              </div>
-            ) : (
-              emailNotifications.map((e) => (
-                <div
-                  key={e.id}
-                  className="p-5 rounded-2xl bg-amber-50/50 border border-amber-200 space-y-3"
-                >
-                  <div className="flex flex-wrap justify-between items-center gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950">
-                        {e.formType} FORM
-                      </span>
-                      <span className="font-bold text-slate-900 text-sm">
-                        {e.subject}
-                      </span>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                          e.status === 'Delivered'
-                            ? 'bg-emerald-500/20 text-emerald-700 border border-emerald-500/30'
-                            : e.status === 'Failed'
-                            ? 'bg-red-500/20 text-red-700 border border-red-500/30'
-                            : 'bg-amber-500/20 text-amber-700 border border-amber-500/30'
-                        }`}
-                      >
-                        {e.status}
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-slate-400 font-mono">
-                      {new Date(e.sentAt).toLocaleString()}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs bg-white p-3 rounded-xl border border-slate-200">
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Customer Name</span>
-                      <strong className="text-slate-800">{e.customerName}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Email Address</span>
-                      <span className="text-blue-600 font-medium">{e.customerEmail}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Phone Number</span>
-                      <span className="text-slate-800 font-mono">{e.customerPhone}</span>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-slate-700 bg-slate-100/70 p-3 rounded-xl font-mono">
-                    <span className="text-slate-400 font-sans font-bold text-[10px] uppercase block mb-1">Details / Form Summary</span>
-                    {e.details}
-                  </div>
-
-                  {(e.deliveryMethod || e.errorMessage) && (
-                    <div className="text-[11px] p-2.5 rounded-lg bg-slate-200/60 text-slate-600 font-mono">
-                      {e.deliveryMethod && <div><strong className="text-emerald-600">Method:</strong> {e.deliveryMethod}</div>}
-                      {e.errorMessage && <div className="text-red-500 mt-0.5"><strong>Error:</strong> {e.errorMessage}</div>}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
           </div>
         </div>
       )}
