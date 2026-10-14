@@ -959,15 +959,49 @@ export async function deleteGalleryItem(id: string): Promise<void> {
 }
 
 
+// Shared validation for public lead and quote submissions.
+function validateCustomerDetails(
+  name: unknown,
+  phone: unknown,
+  email: unknown
+): { name: string; phone: string; email: string } {
+  const cleanName = typeof name === 'string' ? name.trim() : '';
+  const cleanPhone = typeof phone === 'string' ? phone.trim() : '';
+  const cleanEmail = typeof email === 'string' ? email.trim() : '';
+
+  if (cleanName.length < 2 || cleanName.length > 120) {
+    throw new Error('Please enter a name between 2 and 120 characters.');
+  }
+
+  const normalizedPhone = cleanPhone.replace(/[\s()-]/g, '');
+  if (!/^(?:\+91)?[6-9]\d{9}$/.test(normalizedPhone)) {
+    throw new Error('Please enter a valid 10-digit Indian mobile number.');
+  }
+
+  if (
+    cleanEmail.length > 254 ||
+    (cleanEmail !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail))
+  ) {
+    throw new Error('Please enter a valid email address.');
+  }
+
+  return {
+    name: cleanName,
+    phone: normalizedPhone,
+    email: cleanEmail
+  };
+}
+
 // LEADS
 export async function submitLead(data: any): Promise<{ message: string; lead: Lead }> {
+  const customer = validateCustomerDetails(data.fullName || data.name, data.phone, data.email);
   const id = `lead-${Date.now()}`;
 
   const leadData = {
     id,
-    full_name: data.fullName || data.name || 'Valued Customer',
-    phone: data.phone || '',
-    email: data.email || '',
+    full_name: customer.name,
+    phone: customer.phone,
+    email: customer.email,
     city: data.city || 'Guntur',
     state: data.state || 'Andhra Pradesh',
     solar_for: data.solarFor || 'Home',
@@ -1093,13 +1127,14 @@ export async function deleteLead(id: string): Promise<void> {
 
 // QUOTES
 export async function submitQuote(data: any): Promise<{ message: string; quote: QuoteRequest }> {
+  const customer = validateCustomerDetails(data.name, data.phone, data.email);
   const id = `quote-${Date.now()}`;
 
   const payload = {
     id,
-    name: data.name || 'Valued Customer',
-    phone: data.phone || '',
-    email: data.email || '',
+    name: customer.name,
+    phone: customer.phone,
+    email: customer.email,
     city: data.city || 'Guntur',
     state: data.state || 'Andhra Pradesh',
     property_type: data.propertyType || 'Residential',
