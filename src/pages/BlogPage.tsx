@@ -5,10 +5,11 @@ import { Search, Clock, Calendar, User, Tag, ArrowRight, X } from 'lucide-react'
 
 interface BlogPageProps {
   blogs: BlogArticle[];
+  onOpenArticle: (slug: string) => void;
   onOpenQuoteModal: () => void;
 }
 
-export const BlogPage: React.FC<BlogPageProps> = ({ blogs, onOpenQuoteModal }) => {
+export const BlogPage: React.FC<BlogPageProps> = ({ blogs, onOpenArticle, onOpenQuoteModal }) => {
   const [selectedBlog, setSelectedBlog] = useState<BlogArticle | null>(null);
   const [category, setCategory] = useState<string>('All');
   const [search, setSearch] = useState('');
@@ -71,7 +72,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({ blogs, onOpenQuoteModal }) =
         {filteredBlogs.map((b) => (
           <motion.div
             key={b.id}
-            onClick={() => setSelectedBlog(b)}
+            onClick={() => onOpenArticle(b.slug)}
             whileHover={{ y: -6, scale: 1.02 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             className="bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-xl space-y-4 hover:shadow-2xl transition-all cursor-pointer group flex flex-col justify-between"

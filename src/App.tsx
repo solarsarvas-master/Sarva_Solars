@@ -10,6 +10,7 @@ const ProductsPage = lazy(() => import('./pages/ProductsPage').then(m => ({ defa
 const SubsidyPage = lazy(() => import('./pages/SubsidyPage').then(m => ({ default: m.SubsidyPage })));
 const CalculatorsPage = lazy(() => import('./pages/CalculatorsPage').then(m => ({ default: m.CalculatorsPage })));
 const BlogPage = lazy(() => import('./pages/BlogPage').then(m => ({ default: m.BlogPage })));
+const BlogArticlePage = lazy(() => import('./pages/BlogArticlePage').then(m => ({ default: m.BlogArticlePage })));
 const GalleryPage = lazy(() => import('./pages/GalleryPage').then(m => ({ default: m.GalleryPage })));
 const CareersPage = lazy(() => import('./pages/CareersPage').then(m => ({ default: m.CareersPage })));
 const ContactPage = lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
@@ -62,7 +63,19 @@ const defaultFallbackSettings: AppSettings = {
 };
 
 export function App() {
-  const [currentView, setCurrentView] = useState<string>(() => window.location.pathname === '/admin' ? 'admin' : 'home');
+  const [currentView, setCurrentView] = useState<string>(() => {
+    const path = window.location.pathname;
+    if (path === '/admin' || path.startsWith('/admin/')) return 'admin';
+    if (/^\/blog\/[^/]+\/?$/.test(path)) return 'blog-article';
+    if (path === '/blog' || path === '/blog/') return 'blog';
+    return 'home';
+  });
+  const [currentBlogSlug, setCurrentBlogSlug] = useState<string>(() =>
+    window.location.pathname.startsWith('/blog/')
+      ? window.location.pathname.slice('/blog/'.length).split('/')[0]
+      : ''
+  );
+  const [blogsLoaded, setBlogsLoaded] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState<boolean>(false);
 
   // Loaded API Data
@@ -110,6 +123,7 @@ export function App() {
       if (proj) setProjects(proj);
       if (prod) setProducts(prod);
       if (b) setBlogs(b);
+      setBlogsLoaded(true);
       if (sub) setSubsidies(sub);
       if (f) setFaqs(f);
       if (t) setTestimonials(t);
@@ -180,15 +194,43 @@ export function App() {
 
   useEffect(() => {
     const handlePopState = async () => {
-      const isAdminPath = window.location.pathname === '/admin';
+      const path = window.location.pathname;
+      const isAdminPath =
+        path === '/admin' || path.startsWith('/admin/');
 
       if (!isAdminPath && currentView === 'admin') {
-        await signOut();
-        setCurrentUser(null);
-        setCurrentView('home');
-      } else if (isAdminPath && currentView !== 'admin') {
-        setCurrentView('admin');
+        try {
+          await signOut();
+        } finally {
+          setCurrentUser(null);
+        }
       }
+
+      if (isAdminPath) {
+        setCurrentView('admin');
+        setCurrentBlogSlug('');
+        return;
+      }
+
+      const articleMatch = path.match(/^\/blog\/([^/]+)\/?$/);
+      let slug = '';
+
+      if (articleMatch) {
+        try {
+          slug = decodeURIComponent(articleMatch[1]);
+        } catch {
+          slug = articleMatch[1];
+        }
+      }
+
+      setCurrentBlogSlug(slug);
+      setCurrentView(
+        articleMatch
+          ? 'blog-article'
+          : path === '/blog' || path === '/blog/'
+            ? 'blog'
+            : 'home'
+      );
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -196,7 +238,7 @@ export function App() {
   }, [currentView]);
 
   const handleNavigate = async (view: string) => {
-    const nextPath = view === 'admin' ? '/admin' : '/';
+    const nextPath = view === 'admin' ? '/admin' : view === 'blog' ? '/blog' : '/';
 
     if (currentView === 'admin' && view !== 'admin') {
       try {
@@ -211,6 +253,17 @@ export function App() {
     }
 
     setCurrentView(view);
+    setCurrentBlogSlug('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenBlogArticle = (slug: string) => {
+    const nextPath = `/blog/${encodeURIComponent(slug)}`;
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, '', nextPath);
+    }
+    setCurrentBlogSlug(slug);
+    setCurrentView('blog-article');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -268,7 +321,7 @@ export function App() {
             services={services}
             testimonials={testimonials}
             faqs={faqs}
-            blogs={blogs}
+            blogs={blogs.filter((blog) => blog.isPublished)}
             heroSlides={heroSlides}
             onNavigate={handleNavigate}
             onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
@@ -313,9 +366,20 @@ export function App() {
 
         {currentView === 'calculators' && <CalculatorsPage />}
 
+        {currentView === 'blog-article' && (
+          <BlogArticlePage
+            blogs={blogs}
+            slug={currentBlogSlug}
+            blogsLoaded={blogsLoaded}
+            onBackToBlog={() => { void handleNavigate('blog'); }}
+            onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
+          />
+        )}
+
         {currentView === 'blog' && (
           <BlogPage
-            blogs={blogs}
+            blogs={blogs.filter((blog) => blog.isPublished)}
+            onOpenArticle={handleOpenBlogArticle}
             onOpenQuoteModal={() => setIsQuoteModalOpen(true)}
           />
         )}

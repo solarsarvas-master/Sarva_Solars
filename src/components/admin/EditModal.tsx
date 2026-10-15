@@ -86,12 +86,12 @@ export const EditModal: React.FC<EditModalProps> = ({ type, data, onClose, onSav
       case 'subsidies':
         return {
           schemeName: 'PM Surya Ghar Muft Bijli Yojana',
-          capacityRange: 'Up to 3 kW',
-          centralSubsidyAmount: 78000,
-          stateBonusAmount: 0,
-          eligibility: ['Residential Homeowners', 'Valid Electricity Meter'],
-          documents: ['Electricity Bill', 'Aadhaar Card', 'Roof Photo'],
-          processSteps: ['Apply on Portal', 'Site Inspection', 'Installation', 'Subsidy Credit']
+          capacityRange: '',
+          centralSubsidyAmount: '',
+          stateBonusAmount: '',
+          eligibility: [],
+          documents: [],
+          processSteps: []
         };
       case 'testimonials':
         return {
@@ -134,6 +134,60 @@ export const EditModal: React.FC<EditModalProps> = ({ type, data, onClose, onSav
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (type === 'subsidies') {
+      const schemeName = String(formData.schemeName ?? '').trim();
+      const capacityRange = String(formData.capacityRange ?? '').trim();
+      const centralRaw = formData.centralSubsidyAmount;
+      const stateRaw = formData.stateBonusAmount;
+
+      if (!schemeName || !capacityRange) {
+        alert('Please enter the scheme name and capacity slab.');
+        return;
+      }
+
+      if (
+        centralRaw === '' || centralRaw === null || centralRaw === undefined ||
+        stateRaw === '' || stateRaw === null || stateRaw === undefined
+      ) {
+        alert('Please enter both central and state subsidy amounts. Enter 0 if no state bonus applies.');
+        return;
+      }
+
+      const central = Number(centralRaw);
+      const state = Number(stateRaw);
+
+      if (
+        !Number.isFinite(central) || central < 0 ||
+        !Number.isFinite(state) || state < 0
+      ) {
+        alert('Subsidy amounts must be valid, non-negative numbers.');
+        return;
+      }
+
+      const cleanLines = (value: unknown): string[] => {
+        const lines = Array.isArray(value)
+          ? value
+          : String(value ?? '').split(/\r?\n/);
+
+        return lines
+          .map((item) => String(item).trim())
+          .filter(Boolean);
+      };
+
+      onSave({
+        ...formData,
+        schemeName,
+        capacityRange,
+        centralSubsidyAmount: central,
+        stateBonusAmount: state,
+        eligibility: cleanLines(formData.eligibility),
+        documents: cleanLines(formData.documents),
+        processSteps: cleanLines(formData.processSteps)
+      });
+      return;
+    }
+
     onSave(formData);
   };
 
@@ -628,30 +682,98 @@ export const EditModal: React.FC<EditModalProps> = ({ type, data, onClose, onSav
                 <input
                   type="text"
                   required
-                  value={formData.schemeName || ''}
+                  value={formData.schemeName ?? ''}
                   onChange={(e) => setFormData({ ...formData, schemeName: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-slate-900"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Capacity Slab</label>
-                  <input
-                    type="text"
-                    value={formData.capacityRange || ''}
-                    onChange={(e) => setFormData({ ...formData, capacityRange: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-slate-900"
-                  />
-                </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Capacity Slab</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter the verified capacity range"
+                  value={formData.capacityRange ?? ''}
+                  onChange={(e) => setFormData({ ...formData, capacityRange: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Central Subsidy ₹</label>
                   <input
                     type="number"
-                    value={formData.centralSubsidyAmount || 0}
-                    onChange={(e) => setFormData({ ...formData, centralSubsidyAmount: Number(e.target.value) })}
+                    required
+                    min="0"
+                    step="1"
+                    value={formData.centralSubsidyAmount ?? ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      centralSubsidyAmount: e.target.value === '' ? '' : Number(e.target.value)
+                    })}
                     className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-slate-900"
                   />
                 </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">State Subsidy / Bonus ₹</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="1"
+                    value={formData.stateBonusAmount ?? ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      stateBonusAmount: e.target.value === '' ? '' : Number(e.target.value)
+                    })}
+                    className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-slate-900"
+                  />
+                  <p className="mt-1 text-slate-500">Enter 0 if no applicable state bonus is verified.</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Eligibility Criteria</label>
+                <textarea
+                  rows={3}
+                  placeholder="One criterion per line"
+                  value={Array.isArray(formData.eligibility) ? formData.eligibility.join('\n') : ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    eligibility: e.target.value.split(/\r?\n/)
+                  })}
+                  className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Required Documents</label>
+                <textarea
+                  rows={3}
+                  placeholder="One document per line"
+                  value={Array.isArray(formData.documents) ? formData.documents.join('\n') : ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    documents: e.target.value.split(/\r?\n/)
+                  })}
+                  className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Application Process Steps</label>
+                <textarea
+                  rows={4}
+                  placeholder="One step per line"
+                  value={Array.isArray(formData.processSteps) ? formData.processSteps.join('\n') : ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    processSteps: e.target.value.split(/\r?\n/)
+                  })}
+                  className="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-slate-900"
+                />
               </div>
             </>
           )}
