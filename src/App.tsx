@@ -97,6 +97,53 @@ export function App() {
     document.documentElement.classList.add('light');
   }, []);
 
+  // Keep public-page SEO metadata synchronized with CMS settings and the current URL.
+  useEffect(() => {
+    const setMeta = (selector: string, attribute: string, value: string) => {
+      let element = document.querySelector<HTMLMetaElement>(selector);
+      if (!element) {
+        element = document.createElement('meta');
+        const [key, expectedValue] = selector.match(/\[(name|property)="([^"]+)"\]/)?.slice(1) ?? [];
+        if (key && expectedValue) element.setAttribute(key, expectedValue);
+        document.head.appendChild(element);
+      }
+      element.setAttribute(attribute, value);
+    };
+
+    // Admin pages should not declare themselves as public canonical pages.
+    if (currentView === 'admin') {
+      document.querySelector('link[rel="canonical"]')?.remove();
+      return;
+    }
+
+    const path = window.location.pathname;
+    const canonicalUrl = `https://sarvasolar.in${path === '/' ? '/' : path.replace(/\/$/, '')}`;
+
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    canonical.href = canonicalUrl;
+    setMeta('meta[property="og:url"]', 'content', canonicalUrl);
+
+    // Blog article pages manage their own title, description and social metadata.
+    if (currentView === 'blog-article') return;
+
+    const title = settings?.metaTitle?.trim()
+      || 'Sarva Solar | Rooftop Solar Solutions in Andhra Pradesh & Telangana';
+    const description = settings?.metaDescription?.trim()
+      || 'Explore rooftop solar solutions for homes and businesses with Sarva Solar.';
+
+    document.title = title;
+    setMeta('meta[name="description"]', 'content', description);
+    setMeta('meta[property="og:title"]', 'content', title);
+    setMeta('meta[property="og:description"]', 'content', description);
+    setMeta('meta[name="twitter:title"]', 'content', title);
+    setMeta('meta[name="twitter:description"]', 'content', description);
+  }, [currentView, currentBlogSlug, settings]);
+
   // Track customer site visits whenever the viewed page changes
   useEffect(() => {
     logVisitor(currentView);

@@ -26,30 +26,83 @@ export const BlogArticlePage: React.FC<BlogArticlePageProps> = ({
     if (!article) return;
 
     const previousTitle = document.title;
-    document.title = `${article.title} | Sarva Solar`;
+    const title = `${article.title} | Sarva Solar`;
+    const description = article.excerpt || article.title;
+    const imageValue = article.imageUrl?.trim();
+    let image = 'https://sarvasolar.in/sarva-solar-logo.png';
 
-    let descriptionMeta = document.querySelector<HTMLMetaElement>(
-      'meta[name="description"]'
-    );
-    const createdMeta = !descriptionMeta;
-
-    if (!descriptionMeta) {
-      descriptionMeta = document.createElement('meta');
-      descriptionMeta.name = 'description';
-      document.head.appendChild(descriptionMeta);
+    if (imageValue) {
+      try {
+        const parsedImageUrl = new URL(imageValue, 'https://sarvasolar.in');
+        if (parsedImageUrl.protocol === 'https:' || parsedImageUrl.protocol === 'http:') {
+          image = parsedImageUrl.href;
+        }
+      } catch {
+        // Keep the default logo when the CMS image URL is invalid.
+      }
     }
+    const canonicalUrl = `https://sarvasolar.in/blog/${encodeURIComponent(article.slug)}`;
+    const previousCanonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const createdCanonical = !previousCanonical;
+    const canonical = previousCanonical || document.createElement('link');
+    if (createdCanonical) {
+      canonical.rel = 'canonical';
+      document.head.appendChild(canonical);
+    }
+    const previousCanonicalHref = canonical.getAttribute('href');
+    canonical.href = canonicalUrl;
 
-    const previousDescription = descriptionMeta.content;
-    descriptionMeta.content = article.excerpt || article.title;
+    document.title = title;
+
+    const metadata = [
+      ['meta[name="description"]', 'name', 'description', description],
+      ['meta[property="og:url"]', 'property', 'og:url', canonicalUrl],
+      ['meta[property="og:title"]', 'property', 'og:title', title],
+      ['meta[property="og:description"]', 'property', 'og:description', description],
+      ['meta[name="twitter:title"]', 'name', 'twitter:title', title],
+      ['meta[name="twitter:description"]', 'name', 'twitter:description', description],
+      ['meta[property="og:image"]', 'property', 'og:image', image],
+      ['meta[name="twitter:image"]', 'name', 'twitter:image', image],
+      ['meta[name="twitter:card"]', 'name', 'twitter:card',
+        imageValue && image !== 'https://sarvasolar.in/sarva-solar-logo.png' ? 'summary_large_image' : 'summary'],
+    ] as const;
+
+    const previous = metadata.map(([selector, key, name, value]) => {
+      let element = document.querySelector<HTMLMetaElement>(selector);
+      const created = !element;
+
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(key, name);
+        document.head.appendChild(element);
+      }
+
+      const previousContent = element.getAttribute('content');
+      element.setAttribute('content', value);
+
+      return { element, created, previousContent };
+    });
 
     return () => {
       document.title = previousTitle;
 
-      if (createdMeta) {
-        descriptionMeta?.remove();
-      } else if (descriptionMeta) {
-        descriptionMeta.content = previousDescription;
+      if (createdCanonical) {
+        canonical.remove();
+      } else if (previousCanonicalHref === null) {
+        canonical.removeAttribute('href');
+      } else {
+        canonical.setAttribute('href', previousCanonicalHref);
       }
+
+      previous.forEach(({ element, created, previousContent }) => {
+        if (created) {
+          element.remove();
+        } else if (previousContent === null) {
+          element.removeAttribute('content');
+        } else {
+          element.setAttribute('content', previousContent);
+        }
+      });
     };
   }, [article]);
 
